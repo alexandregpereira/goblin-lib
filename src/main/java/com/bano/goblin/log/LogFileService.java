@@ -6,8 +6,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.bano.goblin.sync.HttpRequest;
-import com.bano.goblin.sync.HttpService;
+import com.bano.goblin.http.HttpFileRequest;
+import com.bano.goblin.http.HttpRequest;
+import com.bano.goblin.http.HttpService;
+import com.bano.goblin.http.TokenManager;
 import com.bano.goblin.util.DateUtil;
 
 import java.io.FileInputStream;
@@ -45,6 +47,7 @@ public class LogFileService extends IntentService{
 
     private static HashMap<String, String> headerMap;
     private static HashMap<String, String> paramsMap;
+    private static TokenManager tokenManager;
 
     public LogFileService(){super(LogFileService.class.getName());}
 
@@ -81,12 +84,13 @@ public class LogFileService extends IntentService{
     private void sendLog(String url, String fileFieldName, String fileName){
         FileInputStream inputStream = getFileInputStream(this, getFileName());
         if(inputStream != null){
-            HttpRequest httpRequest = new HttpRequest(url, HttpRequest.POST_METHOD, headerMap, paramsMap,
-                    fileFieldName, fileName, inputStream);
+            HttpFileRequest httpRequest = new HttpFileRequest(url, HttpRequest.POST_METHOD, headerMap, paramsMap,
+                    fileFieldName, fileName, inputStream, tokenManager);
             HttpService.postFile(httpRequest);
         }
         headerMap = null;
         paramsMap = null;
+        tokenManager = null;
     }
 
     private void saveLog(Bundle data) {
@@ -173,9 +177,10 @@ public class LogFileService extends IntentService{
     }
 
     public static void sendLog(Context context, HashMap<String, String> headerMap,
-                               HashMap<String, String> paramsMap, String fileFieldName, String url){
+                               HashMap<String, String> paramsMap, String fileFieldName, String url, TokenManager tokenManager){
         LogFileService.headerMap = headerMap;
         LogFileService.paramsMap = paramsMap;
+        LogFileService.tokenManager = tokenManager;
         Intent intent = new Intent(context, LogFileService.class);
         intent.setAction(SEND_LOG);
         intent.putExtra(URL_KEY, url);
@@ -184,9 +189,10 @@ public class LogFileService extends IntentService{
     }
 
     public static void sendLog(Context context, HashMap<String, String> headerMap,
-                               HashMap<String, String> paramsMap, String fileFieldName, String url, String date){
+                               HashMap<String, String> paramsMap, String fileFieldName, String url, String date, TokenManager tokenManager){
         LogFileService.headerMap = headerMap;
         LogFileService.paramsMap = paramsMap;
+        LogFileService.tokenManager = tokenManager;
         Intent intent = new Intent(context, LogFileService.class);
         intent.setAction(SEND_DATE_LOG);
         intent.putExtra(URL_KEY, url);

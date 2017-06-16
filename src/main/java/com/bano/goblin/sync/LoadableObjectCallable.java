@@ -2,6 +2,7 @@ package com.bano.goblin.sync;
 
 import android.support.annotation.NonNull;
 
+import com.bano.goblin.http.HttpService;
 import com.bano.goblin.util.DateUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

@@ -9,6 +9,8 @@ import android.util.Log;
 import com.bano.goblin.database.BaseSyncableDao;
 import com.bano.goblin.database.BulkParam;
 import com.bano.goblin.database.ModelSyncable;
+import com.bano.goblin.http.HttpRequest;
+import com.bano.goblin.http.HttpService;
 import com.firebase.jobdispatcher.Constraint;
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
 import com.firebase.jobdispatcher.GooglePlayDriver;
