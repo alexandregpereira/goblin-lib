@@ -4,6 +4,7 @@ import com.bano.goblin.database.BaseSyncableDao;
 import com.bano.goblin.database.BulkParam;
 import com.bano.goblin.database.Model;
 import com.bano.goblin.database.ModelSyncable;
+import com.bano.goblin.http.HttpRequest;
 import com.google.gson.reflect.TypeToken;
 
 import java.util.HashSet;

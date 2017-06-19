@@ -1,4 +1,4 @@
-package com.bano.goblin.sync;
+package com.bano.goblin.http;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -44,7 +44,9 @@ public class HttpService {
 
     public static String consumeWithException(@NonNull HttpRequest httpRequest) throws IOException  {
         long init = System.currentTimeMillis();
+        if(!checkToken(httpRequest)) return null;
         HttpURLConnection conn = buildConnection(httpRequest);
+        Log.d(TAG, httpRequest.getUrl() + ": response: " + conn.getResponseCode());
         String line = getResponseBody(conn);
         long end = System.currentTimeMillis();
         Log.d(TAG, httpRequest.getUrl() + ": " + (end - init));
@@ -53,6 +55,35 @@ public class HttpService {
         Log.d("HttService", line);
 
         return line;
+    }
+
+    public static String postFile(@NonNull HttpFileRequest httpFileRequest) {
+        try {
+            long e = System.currentTimeMillis();
+            if(!checkToken(httpFileRequest)) return null;
+            HttpURLConnection conn = buildFileConnection(httpFileRequest);
+            Log.d(TAG, httpFileRequest.getUrl() + ": response: " + conn.getResponseCode());
+            String line = getResponseBody(conn);
+            long end = System.currentTimeMillis();
+            Log.d(TAG, httpFileRequest.getUrl() + ": " + (end - e));
+            return line;
+        } catch (Exception var8) {
+            var8.printStackTrace();
+            Log.e(TAG, "Http get error " + var8.getMessage());
+            return null;
+        }
+    }
+
+    private static boolean checkToken(@NonNull HttpBaseRequest httpBaseRequest) {
+        Token token = httpBaseRequest.getToken();
+        if(token != null && token.isValidToken()) return true;
+        if(httpBaseRequest.getTokenHttpRequest() == null) return true;
+        String response = consume(httpBaseRequest.getTokenHttpRequest());
+        if(response == null) return false;
+        Token tokenTmp = httpBaseRequest.getTokenListener().getToken(response);
+        if(tokenTmp == null) return false;
+        httpBaseRequest.setToken(tokenTmp);
+        return true;
     }
 
     private static String getResponseBody(HttpURLConnection conn) throws IOException {
@@ -78,6 +109,8 @@ public class HttpService {
         conn.setConnectTimeout(TIME_OUT);
         conn.setReadTimeout(TIME_OUT);
         conn.setRequestMethod(httpRequest.getMethod());
+
+        buildTokenHeader(conn, httpRequest.getToken());
         if(httpRequest.headerMap != null) {
             for (Map.Entry<String, String> entry : httpRequest.headerMap.entrySet()) {
                 conn.setRequestProperty(entry.getKey(), entry.getValue());
@@ -100,23 +133,12 @@ public class HttpService {
         return conn;
     }
 
-    public static String postFile(@NonNull HttpRequest httpRequest) {
-        try {
-            long e = System.currentTimeMillis();
-            HttpURLConnection conn = buildFileConnection(httpRequest);
-            Log.d(TAG, httpRequest.getUrl() + ": " + conn.getResponseCode());
-            String line = getResponseBody(conn);
-            long end = System.currentTimeMillis();
-            Log.d(TAG, httpRequest.getUrl() + ": " + (end - e));
-            return line;
-        } catch (Exception var8) {
-            var8.printStackTrace();
-            Log.e(TAG, "Http get error " + var8.getMessage());
-            return null;
-        }
+    private static void buildTokenHeader(HttpURLConnection conn, Token token) {
+        if(token == null) return;
+        conn.setRequestProperty(token.field, token.value);
     }
 
-    private static HttpURLConnection buildFileConnection(HttpRequest httpRequest) throws IOException {
+    private static HttpURLConnection buildFileConnection(HttpFileRequest httpFileRequest) throws IOException {
         String lineEnd = "\r\n";
         String twoHyphens = "--";
         String boundary =  "*****";
@@ -125,14 +147,15 @@ public class HttpService {
         byte[] buffer;
         int maxBufferSize = 1024*1024;
 
-        URL url = new URL(httpRequest.getUrl());
+        URL url = new URL(httpFileRequest.getUrl());
         HttpURLConnection connection;
-        if(httpRequest.getUrl().contains("https:"))
+        if(httpFileRequest.getUrl().contains("https:"))
             connection = (HttpsURLConnection) url.openConnection();
         else connection = (HttpURLConnection) url.openConnection();
 
-        if (httpRequest.headerMap != null) {
-            for (Map.Entry<String, String> entry : httpRequest.headerMap.entrySet()) {
+        buildTokenHeader(connection, httpFileRequest.getToken());
+        if (httpFileRequest.headerMap != null) {
+            for (Map.Entry<String, String> entry : httpFileRequest.headerMap.entrySet()) {
                 connection.setRequestProperty(entry.getKey(), entry.getValue());
             }
         }
@@ -151,8 +174,8 @@ public class HttpService {
         DataOutputStream outputStream = new DataOutputStream( connection.getOutputStream() );
         outputStream.writeBytes(twoHyphens + boundary + lineEnd);
 
-        if(httpRequest.paramsMap != null) {
-            for (Map.Entry<String, String> entry : httpRequest.paramsMap.entrySet()) {
+        if(httpFileRequest.paramsMap != null) {
+            for (Map.Entry<String, String> entry : httpFileRequest.paramsMap.entrySet()) {
                 outputStream.writeBytes("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"" + lineEnd);
                 outputStream.writeBytes(lineEnd);
                 outputStream.writeBytes(entry.getValue() + lineEnd);
@@ -160,28 +183,28 @@ public class HttpService {
             }
         }
 
-        outputStream.writeBytes("Content-Disposition: form-data; name=\"" + httpRequest.getFileFieldName() + "\";filename=\"" + httpRequest.getFileName() +"\"" + lineEnd);
+        outputStream.writeBytes("Content-Disposition: form-data; name=\"" + httpFileRequest.getFileFieldName() + "\";filename=\"" + httpFileRequest.getFileName() +"\"" + lineEnd);
         outputStream.writeBytes(lineEnd);
 
-        bytesAvailable = httpRequest.getFileInputStream().available();
+        bytesAvailable = httpFileRequest.getFileInputStream().available();
         bufferSize = Math.min(bytesAvailable, maxBufferSize);
         buffer = new byte[bufferSize];
 
         // Read file
-        bytesRead = httpRequest.getFileInputStream().read(buffer, 0, bufferSize);
+        bytesRead = httpFileRequest.getFileInputStream().read(buffer, 0, bufferSize);
 
         while (bytesRead > 0)
         {
             outputStream.write(buffer, 0, bufferSize);
-            bytesAvailable = httpRequest.getFileInputStream().available();
+            bytesAvailable = httpFileRequest.getFileInputStream().available();
             bufferSize = Math.min(bytesAvailable, maxBufferSize);
-            bytesRead = httpRequest.getFileInputStream().read(buffer, 0, bufferSize);
+            bytesRead = httpFileRequest.getFileInputStream().read(buffer, 0, bufferSize);
         }
 
         outputStream.writeBytes(lineEnd);
         outputStream.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
 
-        httpRequest.getFileInputStream().close();
+        httpFileRequest.getFileInputStream().close();
         outputStream.flush();
         outputStream.close();
 
