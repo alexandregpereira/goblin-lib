@@ -14,7 +14,7 @@ import java.lang.annotation.RetentionPolicy;
 public abstract class ModelSyncable extends Model{
 
     @IntDef(value = {SYNC_REALIZED_STATUS, SYNC_PENDENT_STATUS,
-            SYNC_INCOMPLETE_STATUS, SYNC_ERROR_STATUS})
+            SYNC_INCOMPLETE_STATUS, SYNC_ERROR_STATUS, NOT_SYNC_STATUS})
     @Retention(RetentionPolicy.SOURCE)
     public @interface SyncStatusFlags {}
 
@@ -22,6 +22,7 @@ public abstract class ModelSyncable extends Model{
     public static final int SYNC_PENDENT_STATUS = 1;
     public static final int SYNC_INCOMPLETE_STATUS = 2;
     public static final int SYNC_ERROR_STATUS = 3;
+    public static final int NOT_SYNC_STATUS = 4;
 
     private String idServer;
     private int syncStatus;
@@ -56,6 +57,14 @@ public abstract class ModelSyncable extends Model{
 
     public void setSyncStatus(@SyncStatusFlags int syncStatus) {
         this.syncStatus = syncStatus;
+    }
+
+    /**
+     * Set this property as eligible to sync if the condition, passed as parameter, is true
+     * @param condition if true, this object will be sync
+     */
+    public void setSyncPendentStatus(boolean condition) {
+        this.syncStatus = condition ? SYNC_PENDENT_STATUS : NOT_SYNC_STATUS;
     }
 
     public boolean isErrorSyncStatus(){
