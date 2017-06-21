@@ -29,7 +29,7 @@ public abstract class BaseSyncableDao<T extends ModelSyncable> extends BaseDao<T
         Param param = new Param(null,
                 getSyncColumnName() + " = " + ModelSyncable.SYNC_PENDENT_STATUS,
                 null, null
-                );
+        );
         return getSet(param);
     }
 
@@ -93,7 +93,8 @@ public abstract class BaseSyncableDao<T extends ModelSyncable> extends BaseDao<T
         String syncColumnName = getSyncColumnName();
         if(syncColumnName == null) return 0;
         return Database.getDatabase().delete(getTableName(),
-                syncColumnName + " != " + ModelSyncable.SYNC_PENDENT_STATUS + " or " +
+                "(" + syncColumnName + " != " + ModelSyncable.SYNC_PENDENT_STATUS + " and " +
+                        syncColumnName + " != " + ModelSyncable.NOT_SYNC_STATUS + ") or " +
                         syncColumnName + " IS NULL"
                 , null);
     }

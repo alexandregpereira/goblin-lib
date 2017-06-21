@@ -125,6 +125,17 @@ public abstract class BaseDao<T extends Model> {
     }
 
     @WorkerThread
+    public boolean updateMany(ArrayList<T> tList) {
+        LinkedHashSet<ParamUpdate> paramUpdates = new LinkedHashSet<>();
+        for(T t : tList){
+            paramUpdates.add(new ParamUpdate(getTableName(), getIdFieldName() + " = ?", new String[]{t.id},
+                    getContentValues(t)));
+        }
+
+        return BaseDao.bulkUpdate(paramUpdates) == tList.size();
+    }
+
+    @WorkerThread
     public boolean delete(T t){
         long rows = Database.getDatabase().delete(getTableName(),
                 getIdFieldName() + " = ?", new String[]{t.id});

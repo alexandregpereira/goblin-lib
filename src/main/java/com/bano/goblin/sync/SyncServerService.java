@@ -73,7 +73,7 @@ public class SyncServerService extends IntentService{
         if(mSyncParams == null) return;
         switch (action) {
             case LOGOUT_ACTION:
-                logout();
+                logout(new LinkedHashSet<>(mSyncParams));
                 break;
             case SYNC_ACTION:
                 sync(new LinkedHashSet<>(mSyncParams));
@@ -127,9 +127,9 @@ public class SyncServerService extends IntentService{
         Log.d(TAG, "sync: " + (end - init));
     }
 
-    private void logout(){
-        SyncServerHelper.sendSyncObjects(this, mSyncParams);
-        SyncServerHelper.deleteAllSynchronizedData(mSyncParams);
+    private void logout(LinkedHashSet<SyncParam> syncParams){
+        SyncServerHelper.sendSyncObjects(this, syncParams);
+        SyncServerHelper.deleteAllSynchronizedData(syncParams);
         PreferencesUtils.putBoolean(this, PreferencesUtils.LOGGED_IN, false);
         SyncServerHelper.sendBroadcast(this, SUCCESS_LOGOUT_CODE);
     }
@@ -160,8 +160,7 @@ public class SyncServerService extends IntentService{
         context.startService(intent);
     }
 
-    public static void startLogout(@NonNull Context context, @NonNull LinkedHashSet<SyncParam> syncParams){
-        mSyncParams = syncParams;
+    public static void startLogout(@NonNull Context context){
         Intent intent = new Intent(context, SyncServerService.class);
         intent.setAction(LOGOUT_ACTION);
         context.startService(intent);
