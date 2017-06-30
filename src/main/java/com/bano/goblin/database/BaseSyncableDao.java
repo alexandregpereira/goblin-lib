@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -23,7 +24,7 @@ public abstract class BaseSyncableDao<T extends ModelSyncable> extends BaseDao<T
     protected abstract String getSyncColumnName();
 
     @WorkerThread
-    public HashSet<T> getSetBySyncStatus(){
+    public Set<T> getSetBySyncStatus(){
         if(getSyncColumnName() == null) return null;
 
         Param param = new Param(null,

@@ -8,7 +8,9 @@ import android.support.annotation.WorkerThread;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -125,14 +127,25 @@ public abstract class BaseDao<T extends Model> {
     }
 
     @WorkerThread
-    public boolean updateMany(ArrayList<T> tList) {
+    public boolean updateMany(List<T> tList) {
+        return BaseDao.bulkUpdate(getParamsUpdate(tList.iterator())) == tList.size();
+    }
+
+    @WorkerThread
+    public boolean updateMany(Set<T> tList) {
+        return BaseDao.bulkUpdate(getParamsUpdate(tList.iterator())) == tList.size();
+    }
+
+    @WorkerThread
+    private LinkedHashSet<ParamUpdate> getParamsUpdate(Iterator<T> iterator){
         LinkedHashSet<ParamUpdate> paramUpdates = new LinkedHashSet<>();
-        for(T t : tList){
+        while(iterator.hasNext()){
+            T t = iterator.next();
             paramUpdates.add(new ParamUpdate(getTableName(), getIdFieldName() + " = ?", new String[]{t.id},
                     getContentValues(t)));
         }
 
-        return BaseDao.bulkUpdate(paramUpdates) == tList.size();
+        return paramUpdates;
     }
 
     @WorkerThread
@@ -177,7 +190,7 @@ public abstract class BaseDao<T extends Model> {
         return null;
     }
 
-    protected Set<T> cursorToSet(Cursor c, Set<T> tList){
+    private Set<T> cursorToSet(Cursor c, Set<T> tList){
         if(c != null) {
             if (c.moveToFirst()) {
                 do{
