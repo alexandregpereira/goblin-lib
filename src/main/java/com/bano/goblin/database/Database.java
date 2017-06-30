@@ -18,19 +18,21 @@ import java.util.LinkedHashSet;
 
 public class Database {
 
-    public static final int DATABASE_VERSION = 17;
-
     private static DatabaseOpenHelper mOpenHelper;
 
     public static void initializeDatabase(Context context, @NonNull LinkedHashSet<BaseDao> baseList,
-                                          @NonNull LinkedHashSet<SyncParam> syncParamList){
+                                          @NonNull LinkedHashSet<SyncParam> syncParamList, int version, String[] alterTableScript){
         if(mOpenHelper == null){
-            mOpenHelper = new DatabaseOpenHelper(context, baseList, syncParamList);
+            mOpenHelper = new DatabaseOpenHelper(context, baseList, syncParamList, version, alterTableScript);
         }
     }
 
     public static LinkedHashSet<BaseDao> getBaseList(){
         return mOpenHelper.getBaseList();
+    }
+
+    public static int getDbVersion(){
+        return mOpenHelper.getDatabaseVersion();
     }
 
     public static LinkedHashSet<SyncParam> getSyncParamList(){
@@ -48,22 +50,30 @@ public class Database {
 
     private static class DatabaseOpenHelper extends SQLiteOpenHelper {
         private static final String DATABASE_NAME = "Cyclop.db";
-        private LinkedHashSet<BaseDao> mBaseList;
-        private LinkedHashSet<SyncParam> mSyncParamList;
+        private final LinkedHashSet<BaseDao> mBaseList;
+        private final LinkedHashSet<SyncParam> mSyncParamList;
+        private final String[] mAlterTableScript;
+        private final int mDatabaseVersion;
 
-        DatabaseOpenHelper(Context context, LinkedHashSet<BaseDao> baseList, LinkedHashSet<SyncParam> syncParamList) {
+        DatabaseOpenHelper(Context context, LinkedHashSet<BaseDao> baseList, LinkedHashSet<SyncParam> syncParamList, int databaseVersion, String[] alterTableScript) {
             super(
                     context,
                     DATABASE_NAME,
                     null,
-                    DATABASE_VERSION
+                    databaseVersion
             );
             mBaseList = baseList;
             mSyncParamList = syncParamList;
+            mAlterTableScript = alterTableScript;
+            mDatabaseVersion = databaseVersion;
         }
 
         protected LinkedHashSet<BaseDao> getBaseList(){
             return mBaseList;
+        }
+
+        int getDatabaseVersion(){
+            return mDatabaseVersion;
         }
 
         protected LinkedHashSet<SyncParam> getSyncParamList(){
@@ -102,6 +112,13 @@ public class Database {
             Log.w(DatabaseOpenHelper.class.getName(),
                     "Upgrading database from version " + oldVersion + " to "
                             + newVersion + ", which will destroy all the existing data");
+
+            if(mAlterTableScript != null && mAlterTableScript.length > 0){
+                for(String script : mAlterTableScript){
+                    db.execSQL(script);
+                }
+                return;
+            }
 
             // Drops all the existing tables in the database
             dropTables(db);
