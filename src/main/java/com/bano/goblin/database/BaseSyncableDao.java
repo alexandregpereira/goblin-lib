@@ -86,7 +86,7 @@ public abstract class BaseSyncableDao<T extends ModelSyncable> extends BaseDao<T
                     getSyncContentValuesAfterSync(t)));
         }
 
-        return BaseDao.bulkUpdate(paramUpdates) > tHashSet.size();
+        return BaseDao.bulkUpdate(paramUpdates) >= tHashSet.size();
     }
 
     @WorkerThread

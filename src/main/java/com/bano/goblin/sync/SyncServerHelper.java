@@ -145,6 +145,7 @@ public final class SyncServerHelper {
                 syncParam.insertHttpRequest.setMethod(HttpRequest.PUT_METHOD);
             }
             else {
+                syncParam.insertHttpRequest.setId(null);
                 syncParam.insertHttpRequest.setMethod(HttpRequest.POST_METHOD);
             }
             syncParam.insertHttpRequest.setRawJson(rawJson);
